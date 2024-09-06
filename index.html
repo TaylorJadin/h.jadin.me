@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html style="height: 100%;">
+
+<head>
+    <title>New Tab</title>
+    <link rel="icon" href="https://jadin.me/favicon.ico">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/mode/overlay.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/gfm/gfm.min.js"></script>
+    <style>
+        * {
+            font-size: 1rem;
+        }
+
+        .cm-s-monokai .CodeMirror-linenumber {
+            color: #75715e;
+        }
+
+        /* Full height code editor */
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        #code-editor {
+            height: 100%;
+        }
+
+        /* Monokai modifications */
+        body,
+        .cm-s-monokai.CodeMirror,
+        .CodeMirror-gutter {
+            background-color: rgba(23, 23, 23, 1);
+        }
+
+        .cm-s-monokai span.cm-comment {
+            color: #a6e22e;
+        }
+
+        .cm-s-monokai span.cm-link {
+            color: #9effff;
+            text-decoration: none;
+        }
+
+        .cm-s-monokai span.cm-variable-2 {
+            color: #e6db74;
+        }
+
+        .cm-s-monokai span.cm-url {
+            color: #f92672;
+            text-decoration: underline;
+        }
+
+        /* Widget styles */
+        .widgets {
+            position: fixed;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 5px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+            /* Ensure it floats above other elements */
+            display: flex;
+            align-items: center;
+        }
+
+        #clock {
+            top: 10px;
+            cursor: pointer;
+        }
+
+        @media screen and (max-width: 600px) {
+            #clock {
+                top: unset;
+                bottom: 90px;
+            }
+        }
+
+        #weather {
+            bottom: 10px;
+            display: none;
+        }
+
+        #forecast-image {
+            max-height: 60px;
+            margin-right: 10px
+        }
+
+        #forecast-links>a>img {
+            max-height: 35px;
+        }
+    </style>
+</head>
+
+<body>
+    <textarea id="code-editor"></textarea>
+
+    <script>
+        var editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
+            lineNumbers: true,
+	    lineWrapping: true,
+            mode: "gfm",
+            theme: "monokai",
+        });
+
+        CodeMirror.defineMode("linksOverlay", function (config, parserConfig) {
+            return {
+                token: function (stream, state) {
+                    if (stream.match(/https?:\/\/[^\s]*/, false)) {
+                        while (stream.next() != null && !stream.match(/\s/, false)) { }
+                        return "url"; // CSS class to be applied
+                    }
+                    while (stream.next() != null && !stream.match(/https?:\/\/[^\s]*/, false)) { }
+                    return null;
+                }
+            };
+        });
+        editor.addOverlay("linksOverlay");
+
+        editor.on("mousedown", function (cm, event) {
+            var target = event.target;
+            // Check if Command key is pressed on macOS or Ctrl key on Windows/Linux and the 'cm-link' class
+            if (target.classList.contains("cm-url") && (event.metaKey || event.ctrlKey)) {
+                var url = target.textContent;
+                if (url.endsWith(')')) {
+                    // handle the case where the URL ends with a ')' character
+                    url = url.slice(0, -1);
+                    window.open(url, '_blank');
+                } else {
+                    window.open(url, '_blank').focus(); // Open the link in a new tab
+                }
+            }
+        });
+
+        // Load content from localStorage
+        var savedContent = localStorage.getItem("editorContent");
+        if (savedContent) {
+            editor.setValue(savedContent);
+        }
+
+        // Save content to localStorage on change
+        editor.on("change", function () {
+            localStorage.setItem("editorContent", editor.getValue());
+        });
+
+        // Adjust the editor height to take up the full height of the viewport
+        function adjustEditorHeight() {
+            var height = window.innerHeight;
+            editor.setSize(null, height + 'px');
+        }
+
+        // Adjust the height on initial load
+        adjustEditorHeight();
+
+        // Adjust the height whenever the window is resized
+        window.onresize = adjustEditorHeight;
+    </script>
+    <div class="widgets" id="clock"></div>
+    <script>
+        document.getElementById('clock').addEventListener('click', function () {
+            window.open('https://worldtimebuddy.com/', '_blank');
+        });
+
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : '12'; // the hour '0' should be '12'
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
+        }
+
+        // Update the clock every second
+        setInterval(updateClock, 1000);
+
+        // Initialize the clock immediately
+        updateClock();
+    </script>
+    <div class="widgets" id="weather"></div>
+    <script>
+        const cacheOptions = {
+            maxEntries: 50,
+            maxAge: 60 * 60 * 2, // 2 hours in seconds
+        };
+        async function getLocation() {
+            try {
+                // Check the cache for the response
+                const cache = await caches.open('location-cache');
+                const cachedResponse = await cache.match('https://ipapi.co/json/');
+
+                if (cachedResponse) {
+                    const data = await cachedResponse.json();
+                    const latitude = data.latitude;
+                    const longitude = data.longitude;
+                    console.log('Location data retrieved from cache');
+                    return { latitude, longitude };
+                }
+
+                // If the response is not in the cache, fetch the data from the network
+                const response = await fetch('https://ipapi.co/json/');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Store the response in the cache for future use
+                await cache.put('https://ipapi.co/json/', response.clone());
+
+                const data = await response.json();
+                const latitude = data.latitude;
+                const longitude = data.longitude;
+                console.log('Location data retrieved from network');
+                return { latitude, longitude };
+            } catch (error) {
+                console.log('Fetch error: ', error);
+                const latitude = 44.6609;
+                const longitude = -88.2705;
+                console.log(`Can't get location. Using default location.`);
+                return { latitude, longitude };
+            }
+        }
+
+        async function getWeather() {
+            try {
+                const { latitude, longitude } = await getLocation();
+                console.log(`Latitude: ${latitude}\nLongitude: ${longitude}`);
+                // Get station from location
+                var response = await fetch('https://api.weather.gov/points/' + latitude + ',' + longitude);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                var data = await response.json();
+                const station = data.properties.observationStations;
+                console.log(`station: ${station}`);
+
+                // Get station_id from station
+                var response = await fetch(station);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                var data = await response.json();
+                const station_url = data.features[0].id
+                const stationIdentifier = data.features[0].properties.stationIdentifier
+                const stationName = data.features[0].properties.name
+                console.log(`station_url: ${station_url}\nstationIdentifier: ${stationIdentifier}\nstationName: ${stationName}`);
+
+                // Get observations from station_url
+                var response = await fetch(station_url + '/observations');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                var data = await response.json();
+                const tempC = data.features[0].properties.temperature.value;
+                const approx_tempF = Math.round((tempC * (9 / 5)) + 32);
+                console.log(`tempC: ${tempC}\napprox_tempF: ${approx_tempF}`);
+
+                const weather_icon = data.features[0].properties.icon;
+                console.log(`weather_icon: ${weather_icon}`);
+                weather_div = document.getElementById('weather')
+                weather_div.innerHTML = `
+                <img id="forecast-image" src="${weather_icon}"> <div id="weather-forecast">${approx_tempF}°F at ${stationIdentifier}
+                <br>
+                    <div id="forecast-links">
+                        <a href="https://forecast.weather.gov/MapClick.php?lat=${latitude}&lon=${longitude}" target="_blank"><img src="https://forecast.weather.gov/build/images/favicon.eab6deff.ico"></a>
+                        <a href="https://www.wunderground.com/weather/${latitude},${longitude}" target="_blank"><img src="https://www.wunderground.com/favicon.ico"></a>
+                        <a href="https://www.windy.com/-Weather-radar-radar?radar,${latitude},${longitude},9" target="_blank"><img src="https://www.windy.com/img/favicon.png"></a>
+                    </div>
+                </div>`;
+                weather_div.style.display = "flex";
+            } catch (error) {
+                console.log('Fetch error: ', error);
+                var element = document.getElementById('weather');
+                element.remove();
+            }
+        }
+
+        getWeather();
+
+    </script>
+</body>
+
+</html>
