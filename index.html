@@ -169,7 +169,7 @@
         document.addEventListener('keydown', function(event) {
         // Check if Control + H is pressed
             if (event.ctrlKey && event.shiftKey&& (event.key === 'h' || event.key === 'H')) {
-                event.preventDefault(); // Prevent the default browser behavior
+                // event.preventDefault(); // Prevent the default browser behavior
 
                 // Toggle the visibility of line numbers
                 var lineNumbersVisible = editor.getOption('lineNumbers');
