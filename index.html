@@ -168,20 +168,37 @@
         // Add keyboard shortcut to toggle line numbers and widgets
         document.addEventListener('keydown', function(event) {
         // Check if Control + H is pressed
-            if (event.ctrlKey && (event.key === 'h' || event.key === 'H')) {
+            if (event.ctrlKey && event.shiftKey&& (event.key === 'h' || event.key === 'H')) {
                 event.preventDefault(); // Prevent the default browser behavior
 
-                // Toggle the CSS class for line numbers
+                // Toggle the visibility of line numbers
+                var lineNumbersVisible = editor.getOption('lineNumbers');
+                editor.setOption('lineNumbers', !lineNumbersVisible);
+
+                // Toggle the CSS class for line numbers and adjust gutter width
                 var lineNumbers = editor.display.wrapper.querySelectorAll('.CodeMirror-linenumber');
-                lineNumbers.forEach(function(el) {
-                    el.style.display = el.style.display === 'none' ? '' : 'none';
-                });
+                var gutter = editor.display.wrapper.querySelector('.CodeMirror-gutters');
+
+                if (lineNumbersVisible) {
+                    // Hide line numbers and remove gutter width
+                    lineNumbers.forEach(function(el) {
+                        el.style.display = 'none';
+                    });
+                    gutter.style.width = '0px';
+                    editor.refresh(); // Refresh editor to apply changes
+                } else {
+                    // Show line numbers and restore gutter width
+                    lineNumbers.forEach(function(el) {
+                        el.style.display = '';
+                    });
+                    gutter.style.width = ''; // Reset to default width
+                    editor.refresh(); // Refresh editor to apply changes
+                }
 
                 // Toggle the visibility of elements with the 'widgets' class
                 var widgets = document.querySelectorAll('.widgets');
                 widgets.forEach(function(widget) {
-                    widget.style.display = widget.style.display === 'none' ? '' : 'none';
-                });
+                    widget.style.display = widget.style.display === 'none' ? 'flex' : 'none';                });
                 }
             });
     </script>
