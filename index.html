@@ -164,7 +164,28 @@
 
         // Adjust the height whenever the window is resized
         window.onresize = adjustEditorHeight;
+
+        // Add keyboard shortcut to toggle line numbers and widgets
+        document.addEventListener('keydown', function(event) {
+        // Check if Control + H is pressed
+            if (event.ctrlKey && (event.key === 'h' || event.key === 'H')) {
+                event.preventDefault(); // Prevent the default browser behavior
+
+                // Toggle the CSS class for line numbers
+                var lineNumbers = editor.display.wrapper.querySelectorAll('.CodeMirror-linenumber');
+                lineNumbers.forEach(function(el) {
+                    el.style.display = el.style.display === 'none' ? '' : 'none';
+                });
+
+                // Toggle the visibility of elements with the 'widgets' class
+                var widgets = document.querySelectorAll('.widgets');
+                widgets.forEach(function(widget) {
+                    widget.style.display = widget.style.display === 'none' ? '' : 'none';
+                });
+                }
+            });
     </script>
+
     <div class="widgets" id="clock"></div>
     <script>
         document.getElementById('clock').addEventListener('click', function () {
