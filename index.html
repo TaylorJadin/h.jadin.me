@@ -99,13 +99,234 @@
         #forecast-links>a>img {
             max-height: 35px;
         }
+
+        /* Bookmarks widget styles */
+        #bookmarks-widget {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(40, 40, 40, 0.9);
+            color: #f8f8f2;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+            padding: 5px;
+            overflow-x: auto;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        #bookmarks-widget a {
+            color: #f8f8f2;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 0 2px;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        #bookmarks-widget a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #bookmarks-widget .folder {
+            position: relative;
+            display: inline-block;
+        }
+
+        #bookmarks-widget .folder > span {
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 0 2px;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        #bookmarks-widget .folder > span:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #bookmarks-widget .folder > span::after {
+            content: "▼";
+            font-size: 0.7em;
+            margin-left: 5px;
+        }
+
+        #bookmarks-widget .folder-content {
+            display: none;
+            position: absolute;
+            background-color: rgba(40, 40, 40, 0.95);
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            border-radius: 3px;
+            padding: 5px 0;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #bookmarks-widget .folder:hover .folder-content {
+            display: block;
+        }
+
+        #bookmarks-widget .folder-content a {
+            display: block;
+            padding: 8px 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #bookmarks-widget .folder-content .folder {
+            display: block;
+            position: relative;
+        }
+
+        #bookmarks-widget .folder-content .folder > span {
+            display: block;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+
+        #bookmarks-widget .folder-content .folder > span::after {
+            content: "►";
+            font-size: 0.7em;
+            margin-left: 5px;
+            float: right;
+        }
+
+        #bookmarks-widget .folder-content .folder:hover > .folder-content {
+            display: block;
+            left: 100%;
+            top: 0;
+        }
+
+        /* Adjust editor to make room for bookmarks bar */
+        .CodeMirror {
+            padding-top: 35px;
+        }
     </style>
 </head>
 
 <body>
+    <div id="bookmarks-widget">
+        <div id="bookmarks-container">Loading bookmarks...</div>
+    </div>
+
     <textarea id="code-editor"></textarea>
 
     <script>
+        // Bookmarks parser
+        async function loadBookmarks() {
+            try {
+                const response = await fetch('bookmarks.html');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const html = await response.text();
+                parseBookmarks(html);
+            } catch (error) {
+                console.error('Error loading bookmarks:', error);
+                document.getElementById('bookmarks-container').textContent = 'Error loading bookmarks';
+            }
+        }
+
+        function parseBookmarks(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Find the main DL element that contains all bookmarks
+            const mainDL = doc.querySelector('DL');
+            if (!mainDL) {
+                document.getElementById('bookmarks-container').textContent = 'No bookmarks found';
+                return;
+            }
+            
+            // Parse the bookmarks structure
+            const bookmarksContainer = document.getElementById('bookmarks-container');
+            bookmarksContainer.innerHTML = '';
+            
+            // Process the top-level bookmarks
+            processBookmarkFolder(mainDL, bookmarksContainer, true);
+        }
+
+        function processBookmarkFolder(dlElement, container, isTopLevel = false) {
+            // Process all direct children of the DL element
+            let currentElement = dlElement.firstElementChild;
+            
+            while (currentElement) {
+                if (currentElement.tagName === 'DT') {
+                    // Check if this is a folder (has H3) or a bookmark (has A)
+                    const h3Element = currentElement.querySelector('H3');
+                    const aElement = currentElement.querySelector('A');
+                    
+                    if (h3Element) {
+                        // This is a folder
+                        const folderName = h3Element.textContent.trim();
+                        const folderDiv = document.createElement('div');
+                        folderDiv.className = 'folder';
+                        
+                        const folderSpan = document.createElement('span');
+                        folderSpan.textContent = folderName;
+                        folderDiv.appendChild(folderSpan);
+                        
+                        // Create container for folder contents
+                        const folderContent = document.createElement('div');
+                        folderContent.className = 'folder-content';
+                        folderDiv.appendChild(folderContent);
+                        
+                        // Find the DL element that contains the folder's contents
+                        const nestedDL = currentElement.querySelector('DL');
+                        if (nestedDL) {
+                            processBookmarkFolder(nestedDL, folderContent);
+                        }
+                        
+                        container.appendChild(folderDiv);
+                    } else if (aElement) {
+                        // This is a bookmark
+                        const bookmarkName = aElement.textContent.trim();
+                        const bookmarkURL = aElement.getAttribute('HREF');
+                        
+                        const bookmarkLink = document.createElement('a');
+                        bookmarkLink.href = bookmarkURL;
+                        bookmarkLink.textContent = bookmarkName;
+                        bookmarkLink.target = '_blank'; // Open in new tab
+                        
+                        // Add favicon if available
+                        const iconData = aElement.getAttribute('ICON');
+                        if (iconData) {
+                            const favicon = document.createElement('img');
+                            favicon.src = iconData;
+                            favicon.style.width = '16px';
+                            favicon.style.height = '16px';
+                            favicon.style.marginRight = '5px';
+                            favicon.style.verticalAlign = 'middle';
+                            bookmarkLink.prepend(favicon);
+                        }
+                        
+                        container.appendChild(bookmarkLink);
+                    }
+                }
+                
+                currentElement = currentElement.nextElementSibling;
+            }
+            
+            // For top level, only show the first level of bookmarks (not the folders inside folders)
+            if (isTopLevel) {
+                const topLevelFolders = container.querySelectorAll('.folder > .folder-content > .folder');
+                topLevelFolders.forEach(folder => {
+                    folder.style.display = 'none';
+                });
+            }
+        }
+
+        // Load bookmarks when the page loads
+        document.addEventListener('DOMContentLoaded', loadBookmarks);
+
         var editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
             lineNumbers: true,
 	    lineWrapping: true,
@@ -199,8 +420,21 @@
                 var widgets = document.querySelectorAll('.widgets');
                 widgets.forEach(function(widget) {
                     widget.style.display = widget.style.display === 'none' ? 'flex' : 'none';                });
+                
+                // Toggle bookmarks widget
+                var bookmarksWidget = document.getElementById('bookmarks-widget');
+                bookmarksWidget.style.display = bookmarksWidget.style.display === 'none' ? 'flex' : 'none';
+                
+                // Adjust editor padding based on bookmarks visibility
+                if (bookmarksWidget.style.display === 'none') {
+                    document.querySelector('.CodeMirror').style.paddingTop = '0';
+                } else {
+                    document.querySelector('.CodeMirror').style.paddingTop = '35px';
                 }
-            });
+                
+                editor.refresh(); // Refresh editor to apply changes
+            }
+        });
     </script>
 
     <div class="widgets" id="clock"></div>
