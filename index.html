@@ -239,7 +239,7 @@
 
         function sanitizeLocation(latitude, longitude) {
             if (Number(latitude) === 44.5458 && Number(longitude) === -88.1019) {
-                console.warn('Returned lat/lon is 44.5458,-88.1019, replacing with DEFAULT_LOCATION');
+                console.log('Returned lat/lon is 44.5458,-88.1019, replacing with DEFAULT_LOCATION');
                 return DEFAULT_LOCATION;
             }
             return { latitude, longitude };
