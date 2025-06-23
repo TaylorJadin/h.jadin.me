@@ -235,7 +235,15 @@
 
         // Get location from ipapi.co
         const LOCATION_URL = 'https://ipapi.co/json/';
-        const DEFAULT_LOCATION = { latitude: 44.6992483, longitude: -88.1392553 };
+        const DEFAULT_LOCATION = { latitude: 44.7208255, longitude: -88.0823481 };
+
+        function sanitizeLocation(latitude, longitude) {
+            if (Number(latitude) === 44.5458 && Number(longitude) === -88.1019) {
+                console.warn('Returned lat/lon is 44.5458,-88.1019, replacing with DEFAULT_LOCATION');
+                return DEFAULT_LOCATION;
+            }
+            return { latitude, longitude };
+        }
 
         async function getLocation() {
             try {
@@ -243,18 +251,18 @@
                 const cachedResponse = await cache.match(LOCATION_URL);
 
                 if (cachedResponse) {
-                    const { latitude, longitude } = await cachedResponse.json();
+                    let { latitude, longitude } = await cachedResponse.json();
                     console.log('Location data retrieved from cache');
-                    return { latitude, longitude };
+                    return sanitizeLocation(latitude, longitude);
                 }
 
                 const response = await fetch(LOCATION_URL);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                 await cache.put(LOCATION_URL, response.clone());
-                const { latitude, longitude } = await response.json();
+                let { latitude, longitude } = await response.json();
                 console.log('Location data retrieved from network');
-                return { latitude, longitude };
+                return sanitizeLocation(latitude, longitude);
             } catch (error) {
                 console.warn('Location fetch error, using default:', error);
                 return DEFAULT_LOCATION;
@@ -297,6 +305,11 @@
 
                 const weather_icon = data.features[0].properties.icon;
                 console.log(`weather_icon: ${weather_icon}`);
+                // Sometimes the api gives us a weather_icon of nulll
+                if (weather_icon === null) {
+                    weather_icon = '';
+                }
+
                 weather_div = document.getElementById('weather')
                 weather_div.innerHTML = `
                 <img id="forecast-image" src="${weather_icon}"> <div id="weather-forecast">${approx_tempF}°F at ${stationIdentifier}
