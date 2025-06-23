@@ -235,11 +235,11 @@
 
         // Get location from ipapi.co
         const LOCATION_URL = 'https://ipapi.co/json/';
-        const DEFAULT_LOCATION = { latitude: 44.7208255, longitude: -88.0823481 };
+        const DEFAULT_LOCATION = { latitude: 44.6992483, longitude: -88.1392553 };
 
         function sanitizeLocation(latitude, longitude) {
             if (Number(latitude) === 44.5458 && Number(longitude) === -88.1019) {
-                console.log('Returned lat/lon is 44.5458,-88.1019, replacing with DEFAULT_LOCATION');
+                console.log('Returned location is 44.5458,-88.1019, replacing with DEFAULT_LOCATION');
                 return DEFAULT_LOCATION;
             }
             return { latitude, longitude };
